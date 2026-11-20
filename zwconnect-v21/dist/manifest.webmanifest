@@ -1,0 +1,20 @@
+{
+  "name": "ZWConnect",
+  "short_name": "ZWConnect",
+  "description": "Find nearby shops, compare prices and manage your ZWConnect business.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f7f5",
+  "theme_color": "#08755c",
+  "orientation": "any",
+  "icons": [
+    {"src": "./assets/brand/zwconnect-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "./assets/brand/zwconnect-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ],
+  "shortcuts": [
+    {"name":"Browse shops","short_name":"Shops","url":"./#profiles","icons":[{"src":"./assets/brand/zwconnect-icon-192.png","sizes":"192x192"}]},
+    {"name":"Bike couriers","short_name":"Couriers","url":"./index.html#couriers","icons":[{"src":"./assets/brand/zwconnect-icon-192.png","sizes":"192x192"}]},
+    {"name":"Courier portal","short_name":"Courier portal","url":"./courier/","icons":[{"src":"./assets/brand/zwconnect-icon-192.png","sizes":"192x192"}]}
+  ]
+}

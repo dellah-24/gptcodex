@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="ZWConnect site administration portal">
+  <title>ZWConnect Admin — Platform control</title>
+  <link rel="icon" type="image/png" href="../assets/brand/zwconnect-favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/admin/admin.css">
+  <link rel="stylesheet" href="../assets/admin/admin-production.css">
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="../assets/core/supabase-config.js" defer></script>
+  <script src="../assets/core/offline-actions.js" defer></script>
+  <script src="../assets/admin/admin-auth-guard.js" defer></script>
+  <script src="../assets/admin/admin.js" defer></script>
+  <script src="../assets/admin/admin-production.js" defer></script>
+</head>
+<body class="admin-locked">
+  <section class="admin-gate" id="adminGate">
+    <a class="gate-back" href="../"><i data-lucide="chevron-left"></i> Back to ZWConnect</a>
+    <div class="gate-grid">
+      <div class="gate-brand"><img src="../assets/brand/zwconnect-logo.png" alt="ZWConnect"><p class="eyebrow">DEDICATED SITE ADMINISTRATION</p><h1>Protect the network.<br>Support every shop.</h1><p>Approve owners, oversee businesses, manage platform accounts and review a complete audit trail—separate from shop operations.</p><div class="security-points"><span><i data-lucide="shield-check"></i> Platform-only permissions</span><span><i data-lucide="fingerprint"></i> Supabase role verification</span><span><i data-lucide="scroll-text"></i> Immutable audit events</span></div></div>
+      <form class="gate-card" id="adminLogin"><div class="gate-card-head"><span><i data-lucide="lock-keyhole"></i></span><div><strong>Site admin sign in</strong><small>Authorised administrators only</small></div></div><label>Email address<input name="email" type="email" autocomplete="email" required></label><label>Password<span class="password-wrap"><input name="password" type="password" autocomplete="current-password" minlength="8" required><button type="button" aria-label="Show password"><i data-lucide="eye"></i></button></span></label><button class="primary full" type="submit">Continue to administration</button><div class="gate-note"><i data-lucide="info"></i><span>Production access is restricted by Supabase's <code>site_admin</code> role. Credentials are never embedded in this page.</span></div></form>
+    </div>
+    <p class="design-credit">Designed by <a href="https://tempesttechnologies.co.zw" target="_blank" rel="noopener noreferrer"><strong>Tempest Technologies</strong></a></p>
+  </section>
+
+  <div class="admin-shell" id="adminShell" aria-hidden="true">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a class="admin-brand" href="../"><img src="../assets/brand/zwconnect-logo.png" alt=""><span><strong>ZWConnect</strong><small>Site administration</small></span></a>
+      <nav id="adminNav" aria-label="Administration navigation">
+        <button class="nav-item active" data-view="overview"><i data-lucide="layout-dashboard"></i><span>Overview</span></button>
+        <button class="nav-item" data-view="approvals"><i data-lucide="badge-check"></i><span>Owner approvals</span><b id="pendingBadge">3</b></button>
+        <button class="nav-item" data-view="businesses"><i data-lucide="store"></i><span>Businesses</span></button>
+        <button class="nav-item" data-view="couriers"><i data-lucide="bike"></i><span>Couriers</span><b id="courierBadge">2</b></button>
+        <button class="nav-item" data-view="subscriptions"><i data-lucide="badge-dollar-sign"></i><span>Subscriptions</span></button>
+        <button class="nav-item" data-view="accounts"><i data-lucide="users"></i><span>Accounts</span></button>
+        <button class="nav-item" data-view="profiles"><i data-lucide="layout-grid"></i><span>Business profiles</span></button>
+        <button class="nav-item" data-view="moderation"><i data-lucide="life-buoy"></i><span>Moderation & Support</span></button>
+        <button class="nav-item" data-view="audit"><i data-lucide="scroll-text"></i><span>Audit log</span></button>
+        <button class="nav-item" data-view="settings"><i data-lucide="settings-2"></i><span>Platform settings</span></button>
+      </nav>
+      <div class="sidebar-foot"><span><i data-lucide="cloud-check"></i><span><strong>Platform healthy</strong><small>Cloudflare • Supabase</small></span></span><button id="adminSignOut"><i data-lucide="log-out"></i> Sign out</button></div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar"><button class="menu-button" id="adminMenu" aria-label="Open menu"><i data-lucide="menu"></i></button><div><p class="eyebrow">ZWCONNECT CONTROL CENTRE</p><h1 id="viewTitle">Network overview</h1></div><label class="admin-search"><i data-lucide="search"></i><input id="adminSearch" placeholder="Search businesses or owners"><kbd>/</kbd></label><button class="admin-sync-status" id="adminSyncStatus" aria-label="Offline action sync status"><span></span><i data-lucide="cloud-check"></i><b>Synced</b><small>0 pending</small></button><div class="admin-user"><span>SD</span><div><strong>Simba Dube</strong><small>Site admin</small></div></div></header>
+      <div class="admin-content" id="adminContent"></div>
+      <footer class="admin-footer"><span>ZWConnect platform administration</span><span>Designed by <a href="https://tempesttechnologies.co.zw" target="_blank" rel="noopener noreferrer"><strong>Tempest Technologies</strong></a></span></footer>
+    </main>
+
+    <nav class="admin-mobile-nav" aria-label="Mobile admin navigation"><button class="active" data-view="overview"><i data-lucide="layout-dashboard"></i><span>Overview</span></button><button data-view="approvals"><i data-lucide="badge-check"></i><span>Approvals</span></button><button data-view="businesses"><i data-lucide="store"></i><span>Shops</span></button><button data-view="audit"><i data-lucide="scroll-text"></i><span>Audit</span></button></nav>
+  </div>
+  <div class="toast" id="adminToast" role="status"><i data-lucide="circle-check"></i><span>Updated</span></div>
+</body>
+</html>
