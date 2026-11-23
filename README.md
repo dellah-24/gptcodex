@@ -2,6 +2,15 @@
 
 An offline-first Android digital business card with NFC, QR and vCard sharing.
 
+## Download APK
+
+[Download TapCard ZW v1.0.0](downloads/TapCard-ZW-v1.0.0-debug.apk)
+
+The current package is a debug-signed APK for direct testing on Android 8.0 or
+newer. Its signature and package structure have been verified with Android
+Build Tools 35. A production-store release should use a securely retained
+release signing key.
+
 ## Features
 
 - Create and edit a personal or company contact card
