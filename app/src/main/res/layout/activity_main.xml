@@ -138,30 +138,30 @@
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/writeNfcButton"
+                android:id="@+id/shareNfcButton"
                 style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Write NFC tag" />
+                android:text="Share by NFC" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/shareButton"
+                android:id="@+id/receiveNfcButton"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
                 android:layout_weight="1"
-                android:text="Share vCard" />
+                android:text="Receive card" />
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/hceButton"
+            android:id="@+id/shareButton"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Enable phone-to-phone NFC card" />
+            android:text="Share vCard file" />
 
         <TextView
             android:layout_width="wrap_content"

@@ -11,6 +11,7 @@ class NdefCardService : HostApduService() {
 
     override fun processCommandApdu(commandApdu: ByteArray?, extras: Bundle?): ByteArray {
         val command = commandApdu ?: return STATUS_FAILED
+        if (!ProfileStore(this).isSharingEnabled()) return STATUS_FAILED
         if (command.size >= SELECT_AID_PREFIX.size && command.copyOfRange(0, SELECT_AID_PREFIX.size).contentEquals(SELECT_AID_PREFIX)) {
             selected = FileSelected.NONE
             return STATUS_OK
@@ -41,8 +42,11 @@ class NdefCardService : HostApduService() {
     override fun onDeactivated(reason: Int) { selected = FileSelected.NONE }
 
     private fun ndefFile(): ByteArray {
-        val uri = ProfileStore(this).load().primaryUri()
-        val message = NdefMessage(arrayOf(NdefRecord.createUri(uri))).toByteArray()
+        val profile = ProfileStore(this).load()
+        val message = NdefMessage(arrayOf(
+            NdefRecord.createUri(profile.primaryUri()),
+            NdefRecord.createMime("text/vcard", VCardBuilder.build(profile).toByteArray(Charsets.UTF_8))
+        )).toByteArray()
         return byteArrayOf((message.size shr 8).toByte(), message.size.toByte()) + message
     }
 

@@ -1,8 +1,10 @@
 package zw.co.tempest.tapcard
 
 import android.content.Intent
+import android.net.Uri
 import android.nfc.NfcAdapter
 import android.nfc.Tag
+import android.nfc.tech.Ndef
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
@@ -17,7 +19,7 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
     private lateinit var store: ProfileStore
     private var profile = CardProfile()
     private var nfcAdapter: NfcAdapter? = null
-    private var waitingForTag = false
+    private var waitingToReceive = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,96 +43,182 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
             render(profile)
             toast("Card saved on this device")
         }
-        binding.writeNfcButton.setOnClickListener { beginNfcWrite() }
+        binding.shareNfcButton.setOnClickListener { togglePhoneSharing() }
+        binding.receiveNfcButton.setOnClickListener { beginReceiving() }
         binding.shareButton.setOnClickListener { shareVCard() }
-        binding.hceButton.setOnClickListener { showHceHelp() }
     }
 
     override fun onPause() {
         super.onPause()
-        nfcAdapter?.disableReaderMode(this)
+        if (waitingToReceive) nfcAdapter?.disableReaderMode(this)
     }
 
     override fun onResume() {
         super.onResume()
-        if (waitingForTag) enableReaderMode()
+        if (waitingToReceive) enableReaderMode()
+        updateNfcStatus()
     }
 
     override fun onTagDiscovered(tag: Tag) {
-        val result = NfcTagWriter.write(tag, profile)
+        val result = runCatching {
+            val ndef = Ndef.get(tag) ?: error("The other phone did not expose an NDEF card.")
+            ndef.connect()
+            try { ndef.ndefMessage ?: ndef.cachedNdefMessage ?: error("No digital card was received.") }
+            finally { ndef.close() }
+        }
         runOnUiThread {
-            waitingForTag = false
+            waitingToReceive = false
             nfcAdapter?.disableReaderMode(this)
-            result.onSuccess { bytes ->
-                binding.nfcStatus.text = "NFC tag written successfully • $bytes bytes"
-                toast("Your digital card is now on the NFC tag")
-            }.onFailure { error ->
-                binding.nfcStatus.text = error.message ?: "Could not write this NFC tag"
+            result.onSuccess { message ->
+                val vCard = message.records.firstOrNull { it.toMimeType()?.equals("text/vcard", true) == true }
+                    ?.payload?.toString(Charsets.UTF_8)
+                val uri = message.records.firstNotNullOfOrNull { record -> record.toUri()?.takeIf { it != Uri.EMPTY } }
+                when {
+                    !vCard.isNullOrBlank() -> showReceivedCard(vCard, uri)
+                    uri != null -> showReceivedLink(uri)
+                    else -> showReceiveError("The NFC message did not contain a TapCard contact.")
+                }
+            }.onFailure { showReceiveError(it.message ?: "Could not receive the NFC card.") }
+        }
+    }
+
+    private fun togglePhoneSharing() {
+        profile = profileFromForm()
+        if (profile.name.isBlank()) {
+            binding.nameInput.error = "Add your name before sharing"
+            return
+        }
+        store.save(profile)
+        render(profile)
+        val adapter = nfcAdapter
+        when {
+            adapter == null -> toast("This phone does not support NFC. Use the QR code instead.")
+            !adapter.isEnabled -> showEnableNfcDialog()
+            else -> {
+                waitingToReceive = false
+                adapter.disableReaderMode(this)
+                val enabled = !store.isSharingEnabled()
+                store.setSharingEnabled(enabled)
+                updateNfcStatus()
+                if (enabled) {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle("Ready to share")
+                        .setMessage("On the second phone, open TapCard ZW and tap Receive card. Keep both phones unlocked, then touch their NFC areas together.")
+                        .setPositiveButton("Got it", null)
+                        .show()
+                }
+            }
+        }
+    }
+
+    private fun beginReceiving() {
+        val adapter = nfcAdapter
+        when {
+            adapter == null -> toast("This phone does not support NFC. Scan the QR code instead.")
+            !adapter.isEnabled -> showEnableNfcDialog()
+            else -> {
+                store.setSharingEnabled(false)
+                waitingToReceive = true
+                enableReaderMode()
+                updateNfcStatus()
                 MaterialAlertDialogBuilder(this)
-                    .setTitle("NFC write failed")
-                    .setMessage(error.message ?: "Try another writable NDEF tag.")
-                    .setPositiveButton("OK", null)
+                    .setTitle("Ready to receive")
+                    .setMessage("On the sending phone, tap Share by NFC. Keep both phones unlocked, then touch their NFC areas together until this phone responds.")
+                    .setNegativeButton("Cancel") { _, _ -> stopReceiving() }
+                    .setPositiveButton("Keep listening", null)
                     .show()
             }
         }
     }
 
-    private fun beginNfcWrite() {
-        profile = profileFromForm()
-        store.save(profile)
-        render(profile)
-        val adapter = nfcAdapter
-        when {
-            adapter == null -> toast("This phone does not have NFC. Use the QR code instead.")
-            !adapter.isEnabled -> MaterialAlertDialogBuilder(this)
-                .setTitle("Turn on NFC")
-                .setMessage("Enable NFC, return to TapCard ZW, then tap Write NFC tag again.")
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Open settings") { _, _ -> startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) }
-                .show()
-            else -> {
-                waitingForTag = true
-                enableReaderMode()
-                binding.nfcStatus.text = "Ready — hold a writable NFC tag against the back of this phone"
-            }
-        }
+    private fun stopReceiving() {
+        waitingToReceive = false
+        nfcAdapter?.disableReaderMode(this)
+        updateNfcStatus()
     }
 
     private fun enableReaderMode() {
         nfcAdapter?.enableReaderMode(
             this,
             this,
-            NfcAdapter.FLAG_READER_NFC_A or NfcAdapter.FLAG_READER_NFC_B or
-                NfcAdapter.FLAG_READER_NFC_F or NfcAdapter.FLAG_READER_NFC_V,
-            null
+            NfcAdapter.FLAG_READER_NFC_A or NfcAdapter.FLAG_READER_NFC_B,
+            Bundle().apply { putInt(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY, 250) }
         )
     }
 
-    private fun showHceHelp() {
-        profile = profileFromForm()
-        store.save(profile)
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Phone-to-phone NFC")
-            .setMessage("Your phone can emulate a small NFC card containing your primary website or contact link. Keep the phone unlocked and NFC enabled, then hold the receiving phone near this device. Device support varies, so keep the QR code visible as the universal fallback.")
+    private fun showReceivedCard(vCard: String, uri: Uri?) {
+        binding.nfcStatus.text = "Digital card received successfully"
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Card received")
+            .setMessage("Save this person to contacts or open their primary link.")
             .setNegativeButton("Close", null)
-            .setPositiveButton("NFC settings") { _, _ -> startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) }
+            .setPositiveButton("Save contact") { _, _ -> openVCard(vCard) }
+        if (uri != null) dialog.setNeutralButton("Open link") { _, _ -> openUri(uri) }
+        dialog.show()
+    }
+
+    private fun showReceivedLink(uri: Uri) {
+        binding.nfcStatus.text = "NFC link received"
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Link received")
+            .setMessage(uri.toString())
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Open") { _, _ -> openUri(uri) }
+            .show()
+    }
+
+    private fun showReceiveError(message: String) {
+        binding.nfcStatus.text = message
+        MaterialAlertDialogBuilder(this)
+            .setTitle("NFC transfer failed")
+            .setMessage("$message\n\nKeep both phones unlocked and try touching their NFC areas together again.")
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
+    private fun openVCard(vCard: String) {
+        val file = cardFile("received-tapcard.vcf").apply { writeText(vCard, Charsets.UTF_8) }
+        val content = FileProvider.getUriForFile(this, "$packageName.files", file)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(content, "text/vcard")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        runCatching { startActivity(intent) }.onFailure { shareFile(file, "Save received contact") }
+    }
+
+    private fun openUri(uri: Uri) {
+        runCatching { startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+            .onFailure { toast("No app can open this link") }
+    }
+
+    private fun showEnableNfcDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Turn on NFC")
+            .setMessage("Both phones need NFC enabled for tap sharing.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Open settings") { _, _ -> startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) }
             .show()
     }
 
     private fun shareVCard() {
         profile = profileFromForm()
         store.save(profile)
-        val directory = File(cacheDir, "cards").apply { mkdirs() }
-        val file = File(directory, "${profile.name.ifBlank { "tapcard" }.replace(Regex("[^A-Za-z0-9_-]"), "-")}.vcf")
-        file.writeText(VCardBuilder.build(profile), Charsets.UTF_8)
+        val filename = "${profile.name.ifBlank { "tapcard" }.replace(Regex("[^A-Za-z0-9_-]"), "-")}.vcf"
+        val file = cardFile(filename).apply { writeText(VCardBuilder.build(profile), Charsets.UTF_8) }
+        shareFile(file, "Share digital card")
+    }
+
+    private fun shareFile(file: File, title: String) {
         val uri = FileProvider.getUriForFile(this, "$packageName.files", file)
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/vcard"
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        startActivity(Intent.createChooser(intent, "Share digital card"))
+        startActivity(Intent.createChooser(intent, title))
     }
+
+    private fun cardFile(name: String): File = File(cacheDir, "cards").apply { mkdirs() }.resolve(name)
 
     private fun profileFromForm() = CardProfile(
         name = binding.nameInput.text?.toString()?.trim().orEmpty(),
@@ -163,10 +251,14 @@ class MainActivity : ComponentActivity(), NfcAdapter.ReaderCallback {
     }
 
     private fun updateNfcStatus() {
+        val sharing = store.isSharingEnabled()
+        binding.shareNfcButton.text = if (sharing) "Stop NFC sharing" else "Share by NFC"
         binding.nfcStatus.text = when {
-            nfcAdapter == null -> "NFC is not available on this phone • QR sharing still works"
-            nfcAdapter?.isEnabled == true -> "NFC ready • profile data stays on this device"
-            else -> "NFC is turned off • QR sharing still works"
+            nfcAdapter == null -> "NFC is unavailable • QR sharing still works"
+            nfcAdapter?.isEnabled != true -> "NFC is turned off • both phones need NFC enabled"
+            waitingToReceive -> "Receiving mode active • touch the two phones together"
+            sharing -> "Sharing mode active • touch the two unlocked phones together"
+            else -> "NFC ready • choose Share or Receive"
         }
     }
 

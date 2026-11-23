@@ -29,5 +29,11 @@ class ProfileStore(context: Context) {
             .apply()
     }
 
+    fun isSharingEnabled(): Boolean = prefs.getBoolean("nfc_sharing_enabled", false)
+
+    fun setSharingEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("nfc_sharing_enabled", enabled).apply()
+    }
+
     companion object { const val PREFS = "tapcard_profile" }
 }

@@ -4,19 +4,18 @@ An offline-first Android digital business card with NFC, QR and vCard sharing.
 
 ## Download APK
 
-[Download TapCard ZW v1.0.0](downloads/TapCard-ZW-v1.0.0-debug.apk)
+[Download TapCard ZW v1.1.0](downloads/TapCard-ZW-v1.1.0-debug.apk)
 
-The current package is a debug-signed APK for direct testing on Android 8.0 or
-newer. Its signature and package structure have been verified with Android
-Build Tools 35. A production-store release should use a securely retained
-release signing key.
+Version 1.1.0 transfers contacts exclusively between two NFC-capable Android
+phones. The APK is debug-signed for direct testing on Android 8.0 or newer. A
+production-store release should use a securely retained release signing key.
 
 ## Features
 
 - Create and edit a personal or company contact card
 - Generate an offline vCard 3.0 QR code
-- Write a website, profile link or vCard to a physical NDEF NFC tag
-- Emulate an NFC Forum Type 4 URL card using Android Host Card Emulation
+- Share a full contact card directly between two Android phones
+- Send with NFC Forum Type 4 Host Card Emulation and receive with NFC reader mode
 - Export a `.vcf` contact file through the Android share sheet
 - Continue using QR and vCard on phones without NFC
 - Store profile data locally with no account, analytics or cloud requirement
@@ -24,21 +23,19 @@ release signing key.
 
 ## Compatibility strategy
 
-When a website or LinkedIn URL exists, physical NFC tags contain a compact NDEF
-URI record. This is the most reliable tap-to-open format across Android and
-iPhone and fits small NTAG213 tags. If there is no URL, the app writes a vCard
-MIME record. The on-screen QR code always contains vCard 3.0 so the receiving
-phone can offer to save the contact directly.
+Phone-to-phone NFC uses two explicit modes. The sending phone emulates an NFC
+Forum Type 4 card containing both a primary URI and vCard 3.0. The receiving
+phone enters reader mode, extracts the vCard and offers to save it to Contacts.
+Both phones must have NFC enabled and remain unlocked during the tap.
 
-Phone-to-phone NFC uses Host Card Emulation and exposes the primary URI as an
-NFC Forum Type 4 tag. HCE support and background scanning vary by device, so QR
-is intentionally kept as the universal fallback.
+The on-screen QR code contains the same vCard 3.0 data and remains available as
+a fallback because NFC antenna position and HCE support vary by device.
 
 ## GitHub inspiration
 
 The implementation was informed by, but does not copy code from:
 
-- [shamana-s/nfc](https://github.com/shamana-s/nfc) — compact NDEF URI writing and cross-platform tag behaviour
+- [shamana-s/nfc](https://github.com/shamana-s/nfc) — compact NDEF URI interoperability
 - [Merloko/business-card-scanner](https://github.com/Merloko/business-card-scanner) — offline-first digital card, QR and NFC workflow
 - [ExpressAnalytics/ea-nfc-demo](https://github.com/ExpressAnalytics/ea-nfc-demo) — NFC Forum Type 4 Host Card Emulation and the Android vCard compatibility caveat
 - [overtonlabs/qr-business-card](https://github.com/overtonlabs/qr-business-card) — vCard 3.0 QR interoperability and escaping rules
@@ -59,9 +56,10 @@ GitHub Actions builds and uploads `TapCard-ZW-debug-apk` on every push to the
 ## Using NFC
 
 1. Complete the profile and tap **Save card**.
-2. For a physical NFC tag, tap **Write NFC tag** and hold an NDEF-compatible tag against the phone.
-3. For phone-to-phone sharing, keep NFC enabled and the phone unlocked, then place the receiving phone near it.
-4. If the receiving phone does not react, let the person scan the QR code.
+2. On the sending phone, tap **Share by NFC**.
+3. On the second phone, open TapCard ZW and tap **Receive card**.
+4. Keep both phones unlocked and touch their NFC areas together until the receiving phone responds.
+5. Tap **Save contact** on the receiving phone, or use the QR code if the devices cannot establish an NFC connection.
 
 Designed by [Tempest Technologies](https://tempesttechnologies.co.zw).
 
