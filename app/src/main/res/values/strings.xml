@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">TapCard ZW</string>
+    <string name="hce_description">Share your TapCard profile over NFC</string>
+    <string name="card_name">Your name</string>
+    <string name="card_title">Role or title</string>
+    <string name="card_company">Company</string>
+    <string name="card_phone">Phone</string>
+    <string name="card_email">Email</string>
+    <string name="card_website">Website or profile URL</string>
+    <string name="card_linkedin">LinkedIn URL</string>
+    <string name="card_address">Location or address</string>
+</resources>

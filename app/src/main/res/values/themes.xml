@@ -1,0 +1,12 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.TapCard" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/tap_green</item>
+        <item name="colorPrimaryVariant">@color/tap_green_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/tap_green</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:navigationBarColor">@color/tap_surface</item>
+        <item name="android:statusBarColor">@color/tap_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

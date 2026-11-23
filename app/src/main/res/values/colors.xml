@@ -1,0 +1,8 @@
+<resources>
+    <color name="tap_green">#08755C</color>
+    <color name="tap_green_dark">#064D3F</color>
+    <color name="tap_mint">#DFF5ED</color>
+    <color name="tap_surface">#F3F8F6</color>
+    <color name="tap_ink">#17332D</color>
+    <color name="white">#FFFFFF</color>
+</resources>
