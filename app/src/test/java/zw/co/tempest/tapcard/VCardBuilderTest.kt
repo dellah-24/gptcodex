@@ -34,4 +34,23 @@ class VCardBuilderTest {
         assertEquals("green", personal.theme)
         assertEquals("blue", work.theme)
     }
+
+    @Test fun publishedCardUsesHostedRecipientPage() {
+        val profile = CardProfile(publicSlug = "dylankoshita", website = "example.com", isPublished = true)
+        assertEquals("https://cards.example.com/c/dylankoshita", profile.sharingUri("https://cards.example.com"))
+        assertEquals("https://example.com", profile.sharingUri(""))
+    }
+
+    @Test fun richerContactDetailsAreIncludedInVCard() {
+        val result = VCardBuilder.build(CardProfile(
+            name = "Dylan",
+            bio = "Founder and builder",
+            instagram = "instagram.com/dylan",
+            whatsapp = "+263 77 123 4567",
+            bookingUrl = "cal.example.com/dylan"
+        ))
+        assertTrue(result.contains("NOTE:Founder and builder"))
+        assertTrue(result.contains("https://wa.me/263771234567"))
+        assertTrue(result.contains("TYPE=instagram:https://instagram.com/dylan"))
+    }
 }

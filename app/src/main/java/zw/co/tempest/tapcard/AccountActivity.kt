@@ -1,17 +1,22 @@
 package zw.co.tempest.tapcard
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.core.content.FileProvider
 import zw.co.tempest.tapcard.databinding.ActivityAccountBinding
 import java.util.concurrent.Executors
+import java.io.File
 
 class AccountActivity : ComponentActivity() {
     private lateinit var binding: ActivityAccountBinding
     private lateinit var session: SessionStore
     private val client = SupabaseClient()
     private val executor = Executors.newSingleThreadExecutor()
+    private var dashboard: SupabaseClient.CardDashboard? = null
+    private var leads: List<SupabaseClient.Lead> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,6 +27,7 @@ class AccountActivity : ComponentActivity() {
         binding.signInButton.setOnClickListener { authenticate(create = false) }
         binding.createAccountButton.setOnClickListener { authenticate(create = true) }
         binding.refreshButton.setOnClickListener { refreshSubscription(showResult = true) }
+        binding.exportLeadsButton.setOnClickListener { exportLeads() }
         binding.signOutButton.setOnClickListener {
             session.signOut()
             AnalyticsTracker(this).track("signed_out")
@@ -66,14 +72,20 @@ class AccountActivity : ComponentActivity() {
         val token = session.accessToken ?: return
         setBusy(true, "Checking subscription…")
         executor.execute {
-            runCatching { client.fetchSubscription(userId, token) }
+            runCatching { Triple(client.fetchSubscription(userId, token), client.fetchMyDashboard(token), client.fetchRecentLeads(token)) }
                 .recoverCatching {
                     val refreshed = client.refresh(session.refreshToken ?: throw it)
                     session.saveAuth(refreshed.userId, refreshed.email, refreshed.accessToken, refreshed.refreshToken)
-                    client.fetchSubscription(refreshed.userId, refreshed.accessToken)
+                    Triple(
+                        client.fetchSubscription(refreshed.userId, refreshed.accessToken),
+                        client.fetchMyDashboard(refreshed.accessToken),
+                        client.fetchRecentLeads(refreshed.accessToken)
+                    )
                 }
-                .onSuccess { value ->
+                .onSuccess { (value, metrics, contacts) ->
                     session.saveSubscription(value)
+                    dashboard = metrics
+                    leads = contacts
                     AnalyticsTracker(this).flush()
                     runOnUiThread {
                         render()
@@ -94,9 +106,20 @@ class AccountActivity : ComponentActivity() {
         binding.planTitle.text = "${subscription.displayName()} plan"
         binding.planDetails.text = when (subscription.effectivePlan) {
             "business" -> "Up to 50 cards • admin-managed access • priority support"
-            "pro" -> "Up to 10 cards • cloud usage analytics • themes"
+            "pro" -> "Up to 10 cards • hosted profile • lead capture • analytics"
             else -> "1 card • offline NFC • QR • vCard export"
         }
+        binding.analyticsCard.visibility = if (session.isSignedIn) View.VISIBLE else View.GONE
+        binding.analyticsText.text = dashboard?.let {
+            "${it.publishedCards} published • ${it.totalViews} views • ${it.totalLeads} connections"
+        } ?: "Publish a profile to start measuring views and connections."
+        binding.connectionsCard.visibility = if (session.isSignedIn) View.VISIBLE else View.GONE
+        binding.connectionsText.text = if (leads.isEmpty()) {
+            "No contacts captured yet."
+        } else leads.take(5).joinToString("\n\n") {
+            listOf(it.name, it.company, it.email.ifBlank { it.phone }).filter(String::isNotBlank).joinToString(" • ")
+        }
+        binding.exportLeadsButton.visibility = if (leads.isEmpty()) View.GONE else View.VISIBLE
         binding.authForm.visibility = if (session.isSignedIn) View.GONE else View.VISIBLE
         binding.refreshButton.visibility = if (session.isSignedIn) View.VISIBLE else View.GONE
         binding.signOutButton.visibility = if (session.isSignedIn) View.VISIBLE else View.GONE
@@ -117,6 +140,25 @@ class AccountActivity : ComponentActivity() {
         binding.signInButton.isEnabled = enabled
         binding.createAccountButton.isEnabled = enabled
         binding.refreshButton.isEnabled = enabled
+    }
+
+    private fun exportLeads() {
+        if (leads.isEmpty()) return
+        fun csv(value: String) = "\"${value.replace("\"", "\"\"")}\""
+        val content = buildString {
+            appendLine("Name,Email,Phone,Company,Notes,Captured at")
+            leads.forEach { lead ->
+                appendLine(listOf(lead.name, lead.email, lead.phone, lead.company, lead.notes, lead.createdAt).joinToString(",", transform = ::csv))
+            }
+        }
+        val directory = File(cacheDir, "cards").apply { mkdirs() }
+        val file = File(directory, "tapcard-connections.csv").apply { writeText(content, Charsets.UTF_8) }
+        val uri = FileProvider.getUriForFile(this, "$packageName.files", file)
+        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+            type = "text/csv"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }, "Export TapCard connections"))
     }
 
     private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()

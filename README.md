@@ -4,7 +4,7 @@ An offline-first Android digital business card with NFC, QR and vCard sharing.
 
 ## Download APK
 
-[Download TapCard ZW v1.4.0](downloads/TapCard-ZW-v1.4.0-debug.apk)
+[Download TapCard ZW v1.5.0](downloads/TapCard-ZW-v1.5.0-debug.apk)
 
 Open the selected card on the first phone. Its NFC card activates automatically
 while that screen remains open; the second unlocked phone uses its normal NFC
@@ -25,6 +25,11 @@ for direct testing on Android 8.0 or newer.
 - Optional Supabase accounts with Free, Pro and Business entitlements
 - Offline subscription cache and reliable queued analytics sync
 - Separate Cloudflare Pages admin portal for monitoring and subscription control
+- No-app hosted recipient profiles with personalised links
+- Two-way contact exchange with consent and spam throttling
+- Profile-view, published-card and captured-lead analytics
+- Recent-connections list and CSV contact export
+- Bio, Instagram, WhatsApp and booking-calendar links
 
 ## Compatibility strategy
 
@@ -68,6 +73,10 @@ The separate [`admin`](admin/) application provides platform metrics, subscriber
 search, trial and subscription controls, recent activity and support tickets.
 Apply the secure [`Supabase migration`](supabase/migrations/202611240001_commercial_platform.sql)
 and follow [COMMERCIALIZATION.md](COMMERCIALIZATION.md) before enabling accounts.
+
+The [`public-card`](public-card/) Cloudflare application powers `/c/{slug}`
+recipient pages. Recipients need no app: they can save the contact, open social
+and booking links, share the profile and securely exchange their details.
 
 ## Using NFC
 

@@ -10,8 +10,12 @@ object VCardBuilder {
         if (profile.phone.isNotBlank()) lines += "TEL;TYPE=CELL,VOICE,PREF:${escape(profile.phone)}"
         if (profile.email.isNotBlank()) lines += "EMAIL;TYPE=INTERNET,WORK:${escape(profile.email)}"
         if (profile.address.isNotBlank()) lines += "ADR;TYPE=WORK:;;${escape(profile.address)};;;;"
+        if (profile.bio.isNotBlank()) lines += "NOTE:${escape(profile.bio)}"
         if (profile.website.isNotBlank()) lines += "URL:${CardProfile.normalizeUrl(profile.website)}"
         if (profile.linkedIn.isNotBlank()) lines += "X-SOCIALPROFILE;TYPE=linkedin:${CardProfile.normalizeUrl(profile.linkedIn)}"
+        if (profile.instagram.isNotBlank()) lines += "X-SOCIALPROFILE;TYPE=instagram:${CardProfile.normalizeUrl(profile.instagram)}"
+        if (profile.bookingUrl.isNotBlank()) lines += "X-ABRELATEDNAMES;TYPE=booking:${CardProfile.normalizeUrl(profile.bookingUrl)}"
+        if (profile.whatsapp.isNotBlank()) lines += "X-SOCIALPROFILE;TYPE=whatsapp:https://wa.me/${profile.whatsapp.filter(Char::isDigit)}"
         lines += "END:VCARD"
         return lines.joinToString("\r\n") + "\r\n"
     }

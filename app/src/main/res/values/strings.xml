@@ -8,5 +8,9 @@
     <string name="card_email">Email</string>
     <string name="card_website">Website or profile URL</string>
     <string name="card_linkedin">LinkedIn URL</string>
+    <string name="card_instagram">Instagram profile URL</string>
+    <string name="card_whatsapp">WhatsApp number with country code</string>
+    <string name="card_booking">Booking or calendar URL</string>
+    <string name="card_bio">Short introduction</string>
     <string name="card_address">Location or address</string>
 </resources>

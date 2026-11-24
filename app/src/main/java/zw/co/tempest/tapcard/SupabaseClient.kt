@@ -6,6 +6,16 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class SupabaseClient {
+    data class CardDashboard(val publishedCards: Int, val totalViews: Int, val totalLeads: Int)
+    data class Lead(
+        val name: String,
+        val email: String,
+        val phone: String,
+        val company: String,
+        val notes: String,
+        val createdAt: String
+    )
+
     data class AuthResult(
         val userId: String,
         val email: String,
@@ -52,6 +62,66 @@ class SupabaseClient {
 
     fun uploadEvents(events: JSONArray, accessToken: String) {
         request("POST", "/rest/v1/tapcard_analytics_events", accessToken, events.toString(), "return=minimal")
+    }
+
+    fun upsertCard(profile: CardProfile, userId: String, accessToken: String, published: Boolean) {
+        val body = JSONObject()
+            .put("user_id", userId)
+            .put("local_card_id", profile.id)
+            .put("slug", profile.publicSlug)
+            .put("label", profile.label)
+            .put("name", profile.name)
+            .put("title", profile.title)
+            .put("company", profile.company)
+            .put("phone", profile.phone)
+            .put("email", profile.email)
+            .put("website", profile.website)
+            .put("linkedin", profile.linkedIn)
+            .put("instagram", profile.instagram)
+            .put("whatsapp", profile.whatsapp)
+            .put("booking_url", profile.bookingUrl)
+            .put("bio", profile.bio)
+            .put("address", profile.address)
+            .put("theme", profile.theme)
+            .put("is_published", published)
+            .put("updated_at", java.time.Instant.now().toString())
+        request(
+            "POST",
+            "/rest/v1/tapcard_cards?on_conflict=user_id,local_card_id",
+            accessToken,
+            body.toString(),
+            "resolution=merge-duplicates,return=minimal"
+        )
+    }
+
+    fun fetchMyDashboard(accessToken: String): CardDashboard {
+        val value = JSONObject(request("POST", "/rest/v1/rpc/tapcard_my_dashboard", accessToken, "{}"))
+        return CardDashboard(
+            publishedCards = value.optInt("published_cards"),
+            totalViews = value.optInt("total_views"),
+            totalLeads = value.optInt("total_leads")
+        )
+    }
+
+    fun fetchRecentLeads(accessToken: String): List<Lead> {
+        val values = JSONArray(request(
+            "GET",
+            "/rest/v1/tapcard_leads?select=full_name,email,phone,company,notes,created_at&order=created_at.desc&limit=100",
+            accessToken
+        ))
+        return buildList {
+            for (index in 0 until values.length()) {
+                val value = values.getJSONObject(index)
+                add(Lead(
+                    name = value.optString("full_name"),
+                    email = value.optString("email"),
+                    phone = value.optString("phone"),
+                    company = value.optString("company"),
+                    notes = value.optString("notes"),
+                    createdAt = value.optString("created_at")
+                ))
+            }
+        }
     }
 
     private fun authRequest(path: String, body: JSONObject): AuthResult {

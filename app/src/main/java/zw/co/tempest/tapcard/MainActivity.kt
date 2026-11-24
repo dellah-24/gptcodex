@@ -7,6 +7,7 @@ import android.nfc.NfcAdapter
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
+import android.view.View
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -14,12 +15,15 @@ import androidx.core.content.FileProvider
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import zw.co.tempest.tapcard.databinding.ActivityMainBinding
 import java.io.File
+import java.util.concurrent.Executors
 
 class MainActivity : ComponentActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var store: ProfileStore
     private lateinit var session: SessionStore
     private lateinit var analytics: AnalyticsTracker
+    private val cloud = SupabaseClient()
+    private val executor = Executors.newSingleThreadExecutor()
     private var profile = CardProfile()
     private var nfcAdapter: NfcAdapter? = null
 
@@ -46,7 +50,8 @@ class MainActivity : ComponentActivity() {
             analytics.track("card_saved", profile.id)
             render(profile)
             activateCard()
-            if (profile.website.isBlank() && profile.linkedIn.isBlank()) {
+            if (profile.isPublished) syncCardToCloud(profile, published = true, showResult = false)
+            if (!profile.isPublished && profile.website.isBlank() && profile.linkedIn.isBlank()) {
                 MaterialAlertDialogBuilder(this)
                     .setTitle("Add a profile link")
                     .setMessage("Your NFC card is active, but adding a website or public profile URL gives the other phone a complete card page to open.")
@@ -59,6 +64,8 @@ class MainActivity : ComponentActivity() {
         binding.cardMenuButton.setOnClickListener { showCardMenu() }
         binding.cardColorButton.setOnClickListener { cycleCardColour() }
         binding.shareButton.setOnClickListener { shareVCard() }
+        binding.publishButton.setOnClickListener { togglePublishedProfile() }
+        binding.shareLinkButton.setOnClickListener { sharePublicLink() }
         binding.accountButton.setOnClickListener { startActivity(Intent(this, AccountActivity::class.java)) }
         binding.nfcStatus.setOnClickListener {
             if (nfcAdapter != null && nfcAdapter?.isEnabled != true) {
@@ -73,6 +80,11 @@ class MainActivity : ComponentActivity() {
         updatePlanStatus()
         analytics.track("app_opened", profile.id)
         analytics.flush()
+        if (session.isSignedIn && cloud.isConfigured) {
+            store.loadAll().filter { it.isPublished }.forEach {
+                syncCardToCloud(it, published = true, showResult = false)
+            }
+        }
     }
 
     override fun onPause() {
@@ -92,7 +104,8 @@ class MainActivity : ComponentActivity() {
             nfcAdapter == null -> "This phone does not support NFC • QR sharing is available"
             nfcAdapter?.isEnabled != true -> "NFC is off • tap here to open NFC settings"
             profile.name.isBlank() -> "Complete and save your card to activate NFC"
-            profile.website.isBlank() && profile.linkedIn.isBlank() -> "NFC is live • add a public profile URL for the best tap experience"
+            profile.isPublished -> "NFC is live • opens your hosted contact and lead-capture page"
+            profile.website.isBlank() && profile.linkedIn.isBlank() -> "NFC is live • publish a recipient profile for the best tap experience"
             else -> "NFC card is live • tap another unlocked phone against this one"
         }
     }
@@ -111,6 +124,78 @@ class MainActivity : ComponentActivity() {
         }
         startActivity(Intent.createChooser(intent, "Share digital card"))
         analytics.track("vcard_shared", profile.id)
+    }
+
+    private fun sharePublicLink() {
+        val url = profile.sharingUri(BuildConfig.PUBLIC_PROFILE_BASE_URL)
+        if (!profile.isPublished || !url.startsWith("https://")) {
+            toast("Publish this card first")
+            return
+        }
+        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, "Connect with ${profile.name}: $url")
+        }, "Share public card"))
+        analytics.track("public_link_shared", profile.id)
+    }
+
+    private fun togglePublishedProfile() {
+        val candidate = profileFromForm()
+        if (candidate.name.isBlank()) {
+            binding.nameInput.error = "Add your name"
+            return
+        }
+        if (!session.isSignedIn) {
+            toast("Sign in before publishing a profile")
+            startActivity(Intent(this, AccountActivity::class.java))
+            return
+        }
+        if (!candidate.isPublished && session.subscription().effectivePlan == "free") {
+            toast("Hosted profiles are available on Pro and Business plans")
+            startActivity(Intent(this, AccountActivity::class.java))
+            return
+        }
+        if (!cloud.isConfigured || !BuildConfig.PUBLIC_PROFILE_BASE_URL.startsWith("https://")) {
+            toast("Hosted profiles are not configured in this build")
+            return
+        }
+        profile = candidate
+        store.save(profile)
+        syncCardToCloud(profile, published = !profile.isPublished, showResult = true)
+    }
+
+    private fun syncCardToCloud(card: CardProfile, published: Boolean, showResult: Boolean) {
+        val userId = session.userId ?: return
+        val token = session.accessToken ?: return
+        if (showResult) {
+            binding.publishButton.isEnabled = false
+            binding.publishButton.text = if (published) "Publishing…" else "Unpublishing…"
+        }
+        executor.execute {
+            runCatching { cloud.upsertCard(card, userId, token, published) }
+                .recoverCatching {
+                    val refreshed = cloud.refresh(session.refreshToken ?: throw it)
+                    session.saveAuth(refreshed.userId, refreshed.email, refreshed.accessToken, refreshed.refreshToken)
+                    cloud.upsertCard(card, refreshed.userId, refreshed.accessToken, published)
+                }
+                .onSuccess {
+                    runOnUiThread {
+                        val updated = card.copy(isPublished = published)
+                        store.save(updated, makeActive = false)
+                        if (profile.id == updated.id) {
+                            profile = updated
+                            render(updated)
+                            activateCard()
+                        }
+                        analytics.track(if (published) "card_published" else "card_unpublished", card.id)
+                        if (showResult) toast(if (published) "Public profile is live" else "Public profile unpublished")
+                    }
+                }
+                .onFailure { error -> runOnUiThread {
+                    render(profile)
+                    if (showResult) toast(error.message ?: "Could not update public profile")
+                } }
+        }
     }
 
     private fun showCardPicker() {
@@ -176,6 +261,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun deleteCard() {
+        if (profile.isPublished) {
+            toast("Unpublish this card before deleting it")
+            return
+        }
         if (store.loadAll().size <= 1) {
             toast("Create another card before deleting this one")
             return
@@ -243,6 +332,10 @@ class MainActivity : ComponentActivity() {
         email = binding.emailInput.text?.toString()?.trim().orEmpty(),
         website = binding.websiteInput.text?.toString()?.trim().orEmpty(),
         linkedIn = binding.linkedinInput.text?.toString()?.trim().orEmpty(),
+        instagram = binding.instagramInput.text?.toString()?.trim().orEmpty(),
+        whatsapp = binding.whatsappInput.text?.toString()?.trim().orEmpty(),
+        bookingUrl = binding.bookingInput.text?.toString()?.trim().orEmpty(),
+        bio = binding.bioInput.text?.toString()?.trim().orEmpty(),
         address = binding.addressInput.text?.toString()?.trim().orEmpty()
     )
 
@@ -254,11 +347,18 @@ class MainActivity : ComponentActivity() {
         emailInput.setText(value.email)
         websiteInput.setText(value.website)
         linkedinInput.setText(value.linkedIn)
+        instagramInput.setText(value.instagram)
+        whatsappInput.setText(value.whatsapp)
+        bookingInput.setText(value.bookingUrl)
+        bioInput.setText(value.bio)
         addressInput.setText(value.address)
     }
 
     private fun render(value: CardProfile) = with(binding) {
         cardSwitcherButton.text = "${value.label} ▾"
+        publishButton.isEnabled = true
+        publishButton.text = if (value.isPublished) "Unpublish recipient profile" else "Publish recipient profile"
+        shareLinkButton.visibility = if (value.isPublished && BuildConfig.PUBLIC_PROFILE_BASE_URL.startsWith("https://")) View.VISIBLE else View.GONE
         cardColorButton.text = "Card colour: ${THEMES[value.theme]?.name ?: "Green"}"
         val theme = THEMES[value.theme] ?: THEMES.getValue("green")
         cardPreview.background = GradientDrawable(
@@ -269,8 +369,11 @@ class MainActivity : ComponentActivity() {
         previewName.text = value.name.ifBlank { "Your Name" }
         previewRole.text = listOf(value.title, value.company).filter { it.isNotBlank() }.joinToString(" • ").ifBlank { "Role • Company" }
         previewContact.text = listOf(value.phone, value.email).filter { it.isNotBlank() }.joinToString(" • ").ifBlank { "phone • email" }
-        previewUrl.text = value.primaryUri()
-        qrCode.setImageBitmap(QrCodeGenerator.create(VCardBuilder.build(value)))
+        previewUrl.text = value.sharingUri(BuildConfig.PUBLIC_PROFILE_BASE_URL)
+        val qrContent = if (value.isPublished && BuildConfig.PUBLIC_PROFILE_BASE_URL.startsWith("https://")) {
+            value.sharingUri(BuildConfig.PUBLIC_PROFILE_BASE_URL)
+        } else VCardBuilder.build(value)
+        qrCode.setImageBitmap(QrCodeGenerator.create(qrContent))
     }
 
     private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()

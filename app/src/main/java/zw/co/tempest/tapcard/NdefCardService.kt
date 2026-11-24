@@ -44,7 +44,7 @@ class NdefCardService : HostApduService() {
     private fun ndefFile(): ByteArray {
         val profile = ProfileStore(this).load()
         val message = NdefMessage(arrayOf(
-            NdefRecord.createUri(profile.primaryUri()),
+            NdefRecord.createUri(profile.sharingUri(BuildConfig.PUBLIC_PROFILE_BASE_URL)),
             NdefRecord.createMime("text/vcard", VCardBuilder.build(profile).toByteArray(Charsets.UTF_8))
         )).toByteArray()
         return byteArrayOf((message.size shr 8).toByte(), message.size.toByte()) + message

@@ -12,7 +12,12 @@
 - Separate Cloudflare Pages admin portal with subscriber management, usage
   metrics, support tickets and subscription audit records.
 - Supabase Row Level Security; admin access is granted server-side only.
-- Backend lead records with consent tracking, ready for a public profile form.
+- Backend lead records with consent tracking and public contact-exchange form.
+- Hosted mobile recipient profiles with personalised URLs and dynamic updates.
+- Two-way contact exchange, lead throttling and contact-save downloads.
+- In-app recent connections and CSV export for spreadsheet or CRM import.
+- Profile views, published cards and captured leads in customer and admin analytics.
+- Rich profile links for Instagram, WhatsApp and meeting booking.
 
 ## Production configuration
 
@@ -21,6 +26,7 @@ Build Android with public Supabase client settings:
 ```bash
 gradle -PSUPABASE_URL=https://PROJECT.supabase.co \
   -PSUPABASE_ANON_KEY=PUBLIC_ANON_KEY \
+  -PPUBLIC_PROFILE_BASE_URL=https://cards.example.co.zw \
   :app:assembleRelease
 ```
 
@@ -42,23 +48,19 @@ credentials owned by Tempest Technologies.
 
 ## Recommended next marketable features
 
-1. Hosted public profile pages with dynamic links so contact details can change
-   without reinstalling or rewriting the NFC payload.
-2. Two-way contact exchange and lead capture, including consent, notes, tags,
-   CSV export and CRM webhooks.
-3. Per-card analytics: views, NFC taps, QR scans, contact saves and conversion
-   funnels. Hosted links are required to measure recipient activity reliably.
-4. Business teams: invitations, branded templates, card approval and role-based
+1. Expanded lead management with editing, tags and direct CRM webhooks.
+2. Deeper per-card conversion funnels for contact saves and booking clicks.
+3. Business teams: invitations, branded templates, card approval and role-based
    controls.
-5. Custom domains, company colours, logos and removal of TapCard branding.
-6. Google/Apple Wallet passes, email signatures and virtual meeting backgrounds.
-7. Account deletion, data export, privacy policy, terms, refund policy and a
+4. Custom domains, company colours, logos and removal of TapCard branding.
+5. Google/Apple Wallet passes, email signatures and virtual meeting backgrounds.
+6. Account deletion, data export, privacy policy, terms, refund policy and a
    customer support workflow before public launch.
 
 ## Suggested positioning
 
 - Free: one offline NFC/QR card.
-- Pro: up to ten cards, themes and cloud usage analytics.
+- Pro: up to ten cards, hosted profiles, lead capture, themes and analytics.
 - Business: up to fifty cards, admin-managed access and priority support.
 
 Do not advertise team management, CRM sync or recipient-view analytics as live

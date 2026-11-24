@@ -7,7 +7,7 @@ let users = [];
 const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[c]);
 const dateText = (value) => value ? new Intl.DateTimeFormat(undefined, {dateStyle:"medium"}).format(new Date(value)) : "—";
 const toIso = (value) => value ? new Date(value).toISOString() : null;
-const metricLabels = {total_users:"Total users",active_paid:"Active paid",trials:"Trials",past_due:"Past due",events_7d:"Events · 7 days",active_users_30d:"Active · 30 days",open_tickets:"Open tickets"};
+const metricLabels = {total_users:"Total users",active_paid:"Active paid",trials:"Trials",past_due:"Past due",profile_views:"Profile views",captured_leads:"Captured leads",active_users_30d:"Active · 30 days",open_tickets:"Open tickets"};
 
 async function requireAdmin() {
   const {data:{session}} = await client.auth.getSession();
@@ -47,7 +47,7 @@ function renderUsers(values) {
     <td><strong>${escapeHtml(user.display_name || user.email)}</strong><small>${escapeHtml(user.email)}${user.company_name ? " · " + escapeHtml(user.company_name) : ""}</small></td>
     <td><span class="pill plan-${escapeHtml(user.plan)}">${escapeHtml(user.plan)}</span></td>
     <td>${escapeHtml(user.status)}</td><td>${dateText(user.trial_ends_at || user.current_period_end)}</td>
-    <td>${user.last_active_at ? dateText(user.last_active_at) : "Never"}<small>${Number(user.event_count || 0).toLocaleString()} events</small></td>
+    <td>${user.last_active_at ? dateText(user.last_active_at) : "Never"}<small>${Number(user.profile_views || 0).toLocaleString()} views · ${Number(user.captured_leads || 0).toLocaleString()} leads</small></td>
     <td><button class="small edit-subscription" data-user="${escapeHtml(user.user_id)}">Manage</button></td>
   </tr>`).join("") || `<tr><td colspan="6">No customers found.</td></tr>`;
   document.querySelectorAll(".edit-subscription").forEach(button => button.addEventListener("click", () => openSubscription(button.dataset.user)));

@@ -24,11 +24,12 @@ class ProfileStore(context: Context) {
         }.getOrElse { migrateLegacy() }
     }
 
-    fun save(profile: CardProfile) {
+    fun save(profile: CardProfile, makeActive: Boolean = true) {
         val cards = loadAll().toMutableList()
         val index = cards.indexOfFirst { it.id == profile.id }
         if (index >= 0) cards[index] = profile else cards.add(profile)
-        persist(cards, profile.id)
+        val currentActive = prefs.getString(KEY_ACTIVE, null)
+        persist(cards, if (makeActive || currentActive.isNullOrBlank()) profile.id else currentActive)
         clearLegacyFields()
     }
 
@@ -42,7 +43,12 @@ class ProfileStore(context: Context) {
 
     fun duplicate(profile: CardProfile, maxCards: Int = MAX_CARDS): CardProfile {
         require(loadAll().size < maxCards) { "Your plan supports up to $maxCards card${if (maxCards == 1) "" else "s"}." }
-        val copy = profile.copy(id = CardProfile().id, label = "${profile.label} copy")
+        val copy = profile.copy(
+            id = CardProfile().id,
+            publicSlug = CardProfile.newSlug(),
+            label = "${profile.label} copy",
+            isPublished = false
+        )
         persist(loadAll() + copy, copy.id)
         return copy
     }
@@ -92,6 +98,7 @@ class ProfileStore(context: Context) {
 
     private fun toJson(card: CardProfile) = JSONObject()
         .put("id", card.id)
+        .put("publicSlug", card.publicSlug)
         .put("label", card.label)
         .put("name", card.name)
         .put("title", card.title)
@@ -100,11 +107,17 @@ class ProfileStore(context: Context) {
         .put("email", card.email)
         .put("website", card.website)
         .put("linkedin", card.linkedIn)
+        .put("instagram", card.instagram)
+        .put("whatsapp", card.whatsapp)
+        .put("bookingUrl", card.bookingUrl)
+        .put("bio", card.bio)
         .put("address", card.address)
         .put("theme", card.theme)
+        .put("isPublished", card.isPublished)
 
     private fun fromJson(json: JSONObject) = CardProfile(
         id = json.optString("id").ifBlank { CardProfile().id },
+        publicSlug = json.optString("publicSlug").ifBlank { CardProfile.newSlug() },
         label = json.optString("label", "Personal"),
         name = json.optString("name"),
         title = json.optString("title"),
@@ -113,8 +126,13 @@ class ProfileStore(context: Context) {
         email = json.optString("email"),
         website = json.optString("website"),
         linkedIn = json.optString("linkedin"),
+        instagram = json.optString("instagram"),
+        whatsapp = json.optString("whatsapp"),
+        bookingUrl = json.optString("bookingUrl"),
+        bio = json.optString("bio"),
         address = json.optString("address"),
-        theme = json.optString("theme", "green")
+        theme = json.optString("theme", "green"),
+        isPublished = json.optBoolean("isPublished", false)
     )
 
     private fun clearLegacyFields() {

@@ -213,6 +213,22 @@
             android:layout_marginTop="8dp"
             android:text="Share vCard file" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/publishButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Publish recipient profile" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/shareLinkButton"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Share public card link"
+            android:visibility="gone" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -252,6 +268,35 @@
 
         <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="@string/card_linkedin">
             <com.google.android.material.textfield.TextInputEditText android:id="@+id/linkedinInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="@string/card_instagram">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/instagramInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="@string/card_whatsapp">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/whatsappInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="phone" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="@string/card_booking">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/bookingInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/card_bio"
+            app:counterEnabled="true"
+            app:counterMaxLength="240">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/bioInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:inputType="textCapSentences|textMultiLine"
+                android:maxLength="240"
+                android:minLines="3" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="@string/card_address">

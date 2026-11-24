@@ -5,6 +5,7 @@ plugins {
 
 val supabaseUrl = providers.gradleProperty("SUPABASE_URL").orElse("").get()
 val supabaseAnonKey = providers.gradleProperty("SUPABASE_ANON_KEY").orElse("").get()
+val publicProfileBaseUrl = providers.gradleProperty("PUBLIC_PROFILE_BASE_URL").orElse("").get()
 
 android {
     namespace = "zw.co.tempest.tapcard"
@@ -14,11 +15,12 @@ android {
         applicationId = "zw.co.tempest.tapcard"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.4.0"
+        versionCode = 6
+        versionName = "1.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "PUBLIC_PROFILE_BASE_URL", "\"$publicProfileBaseUrl\"")
     }
 
     buildTypes {

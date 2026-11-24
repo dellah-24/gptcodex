@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08755c">
+  <title>TapCard ZW</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section id="loading" class="state">Opening TapCard…</section>
+    <section id="error" class="state hidden"><h1>Card unavailable</h1><p>This card may be private or the link may be incorrect.</p></section>
+    <article id="profile" class="profile hidden">
+      <div class="hero">
+        <div class="monogram" id="monogram">TZ</div>
+        <p class="eyebrow">TAPCARD ZW</p>
+        <h1 id="name"></h1>
+        <p id="role" class="role"></p>
+        <p id="bio" class="bio hidden"></p>
+      </div>
+      <div class="actions">
+        <button id="saveContact">Save contact</button>
+        <button id="shareCard" class="secondary">Share</button>
+      </div>
+      <div id="links" class="links"></div>
+      <section class="exchange">
+        <p class="eyebrow">CONNECT BACK</p>
+        <h2>Share your details</h2>
+        <p>Your information goes directly to this card owner.</p>
+        <form id="leadForm">
+          <input id="websiteCheck" class="trap" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <label>Full name<input id="leadName" maxlength="120" required></label>
+          <label>Email<input id="leadEmail" type="email" maxlength="200"></label>
+          <label>Phone<input id="leadPhone" type="tel" maxlength="40"></label>
+          <label>Company <span>(optional)</span><input id="leadCompany" maxlength="120"></label>
+          <label>Note <span>(optional)</span><textarea id="leadNote" maxlength="500" rows="3"></textarea></label>
+          <label class="consent"><input id="consent" type="checkbox" required> I agree to share these details with the card owner for follow-up.</label>
+          <button id="submitLead" type="submit">Send my details</button>
+          <p id="formMessage" class="message" aria-live="polite"></p>
+        </form>
+      </section>
+      <footer>Powered by <a href="https://tempesttechnologies.co.zw" rel="noopener">Tempest Technologies</a></footer>
+    </article>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

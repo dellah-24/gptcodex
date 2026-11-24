@@ -7,8 +7,8 @@ uses only the public anonymous key; database Row Level Security and the
 
 ## Deploy
 
-1. Create a Supabase project and run
-   `supabase/migrations/202611240001_commercial_platform.sql`.
+1. Create a Supabase project and run both migrations in `supabase/migrations`
+   in filename order.
 2. Sign up the intended administrator through the app or Supabase Auth.
 3. Edit and run `supabase/promote-admin.sql` in the SQL editor.
 4. In Cloudflare Pages set the root directory to `admin`, build command to
