@@ -18,6 +18,8 @@ import java.io.File
 class MainActivity : ComponentActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var store: ProfileStore
+    private lateinit var session: SessionStore
+    private lateinit var analytics: AnalyticsTracker
     private var profile = CardProfile()
     private var nfcAdapter: NfcAdapter? = null
 
@@ -26,6 +28,8 @@ class MainActivity : ComponentActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         store = ProfileStore(this)
+        session = SessionStore(this)
+        analytics = AnalyticsTracker(this)
         nfcAdapter = NfcAdapter.getDefaultAdapter(this)
         profile = store.load()
         populateForm(profile)
@@ -39,6 +43,7 @@ class MainActivity : ComponentActivity() {
             }
             profile = candidate
             store.save(profile)
+            analytics.track("card_saved", profile.id)
             render(profile)
             activateCard()
             if (profile.website.isBlank() && profile.linkedIn.isBlank()) {
@@ -54,6 +59,7 @@ class MainActivity : ComponentActivity() {
         binding.cardMenuButton.setOnClickListener { showCardMenu() }
         binding.cardColorButton.setOnClickListener { cycleCardColour() }
         binding.shareButton.setOnClickListener { shareVCard() }
+        binding.accountButton.setOnClickListener { startActivity(Intent(this, AccountActivity::class.java)) }
         binding.nfcStatus.setOnClickListener {
             if (nfcAdapter != null && nfcAdapter?.isEnabled != true) {
                 startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
@@ -64,6 +70,9 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         activateCard()
+        updatePlanStatus()
+        analytics.track("app_opened", profile.id)
+        analytics.flush()
     }
 
     override fun onPause() {
@@ -101,6 +110,7 @@ class MainActivity : ComponentActivity() {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         startActivity(Intent.createChooser(intent, "Share digital card"))
+        analytics.track("vcard_shared", profile.id)
     }
 
     private fun showCardPicker() {
@@ -122,8 +132,12 @@ class MainActivity : ComponentActivity() {
 
     private fun createCard() {
         promptForLabel("New card", "Work") { label ->
-            runCatching { store.create(label) }
-                .onSuccess { switchTo(it); toast("New card created") }
+            runCatching { store.create(label, session.subscription().maxCards) }
+                .onSuccess {
+                    switchTo(it)
+                    analytics.track("card_created", it.id)
+                    toast("New card created")
+                }
                 .onFailure { toast(it.message ?: "Could not create card") }
         }
     }
@@ -152,8 +166,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun duplicateCard() {
-        runCatching { store.duplicate(profileFromForm()) }
-            .onSuccess { switchTo(it); toast("Card duplicated") }
+        runCatching { store.duplicate(profileFromForm(), session.subscription().maxCards) }
+            .onSuccess {
+                switchTo(it)
+                analytics.track("card_duplicated", it.id)
+                toast("Card duplicated")
+            }
             .onFailure { toast(it.message ?: "Could not duplicate card") }
     }
 
@@ -180,6 +198,7 @@ class MainActivity : ComponentActivity() {
         profile = profileFromForm().copy(theme = next)
         store.save(profile)
         render(profile)
+        analytics.track("card_theme_changed", profile.id)
     }
 
     private fun promptForLabel(title: String, initial: String, action: (String) -> Unit) {
@@ -202,6 +221,13 @@ class MainActivity : ComponentActivity() {
         populateForm(card)
         render(card)
         activateCard()
+        analytics.track("card_selected", card.id)
+    }
+
+    private fun updatePlanStatus() {
+        val value = session.subscription()
+        val account = session.email?.let { " • $it" }.orEmpty()
+        binding.accountButton.text = "${value.displayName()} plan • ${value.maxCards} card limit$account"
     }
 
     private fun saveCurrentSilently() {

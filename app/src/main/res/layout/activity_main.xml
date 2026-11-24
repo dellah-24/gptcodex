@@ -32,6 +32,14 @@
             android:textSize="28sp"
             android:textStyle="bold" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/accountButton"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Free plan • Account &amp; subscription" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

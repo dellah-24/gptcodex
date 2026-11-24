@@ -3,6 +3,9 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val supabaseUrl = providers.gradleProperty("SUPABASE_URL").orElse("").get()
+val supabaseAnonKey = providers.gradleProperty("SUPABASE_ANON_KEY").orElse("").get()
+
 android {
     namespace = "zw.co.tempest.tapcard"
     compileSdk = 35
@@ -11,9 +14,11 @@ android {
         applicationId = "zw.co.tempest.tapcard"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.3.0"
+        versionCode = 5
+        versionName = "1.4.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
     }
 
     buildTypes {
@@ -23,7 +28,10 @@ android {
         }
     }
 
-    buildFeatures { viewBinding = true }
+    buildFeatures {
+        viewBinding = true
+        buildConfig = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

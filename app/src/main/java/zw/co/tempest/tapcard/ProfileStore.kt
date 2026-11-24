@@ -32,16 +32,16 @@ class ProfileStore(context: Context) {
         clearLegacyFields()
     }
 
-    fun create(label: String): CardProfile {
-        require(loadAll().size < MAX_CARDS) { "A maximum of $MAX_CARDS cards is supported." }
+    fun create(label: String, maxCards: Int = MAX_CARDS): CardProfile {
+        require(loadAll().size < maxCards) { "Your plan supports up to $maxCards card${if (maxCards == 1) "" else "s"}." }
         val card = CardProfile(label = label.trim().ifBlank { "New card" })
         val cards = loadAll() + card
         persist(cards, card.id)
         return card
     }
 
-    fun duplicate(profile: CardProfile): CardProfile {
-        require(loadAll().size < MAX_CARDS) { "A maximum of $MAX_CARDS cards is supported." }
+    fun duplicate(profile: CardProfile, maxCards: Int = MAX_CARDS): CardProfile {
+        require(loadAll().size < maxCards) { "Your plan supports up to $maxCards card${if (maxCards == 1) "" else "s"}." }
         val copy = profile.copy(id = CardProfile().id, label = "${profile.label} copy")
         persist(loadAll() + copy, copy.id)
         return copy

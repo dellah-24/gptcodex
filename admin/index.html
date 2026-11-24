@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>TapCard ZW Admin</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div><span class="eyebrow">TAPCARD ZW</span><h1>Platform control centre</h1></div>
+      <button id="signOut" class="ghost hidden">Sign out</button>
+    </header>
+
+    <section id="loginPanel" class="card login">
+      <h2>Administrator sign in</h2>
+      <p>Only accounts promoted to the admin role in Supabase can continue.</p>
+      <form id="loginForm">
+        <label>Email<input id="email" type="email" autocomplete="username" required></label>
+        <label>Password<input id="password" type="password" autocomplete="current-password" minlength="8" required></label>
+        <button type="submit">Sign in securely</button>
+      </form>
+      <p id="loginMessage" class="message"></p>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <div id="metrics" class="metrics"></div>
+
+      <section class="card">
+        <div class="section-head">
+          <div><span class="eyebrow">CUSTOMERS</span><h2>Subscriptions</h2></div>
+          <input id="userSearch" type="search" placeholder="Search email, name or company">
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Customer</th><th>Plan</th><th>Status</th><th>Expires</th><th>Activity</th><th></th></tr></thead><tbody id="usersBody"></tbody></table>
+        </div>
+      </section>
+
+      <div class="split">
+        <section class="card"><div class="section-head"><div><span class="eyebrow">LIVE SIGNALS</span><h2>Recent activity</h2></div></div><div id="activity" class="feed"></div></section>
+        <section class="card"><div class="section-head"><div><span class="eyebrow">SUPPORT</span><h2>Open tickets</h2></div></div><div id="tickets" class="feed"></div></section>
+      </div>
+      <p id="dashboardMessage" class="message"></p>
+    </section>
+  </main>
+
+  <dialog id="subscriptionDialog">
+    <form id="subscriptionForm" method="dialog">
+      <h2>Update subscription</h2>
+      <p id="selectedUser"></p>
+      <input id="targetUserId" type="hidden">
+      <label>Plan<select id="plan"><option value="free">Free</option><option value="pro">Pro</option><option value="business">Business</option></select></label>
+      <label>Status<select id="status"><option value="active">Active</option><option value="trialing">Trial</option><option value="past_due">Past due</option><option value="cancelled">Cancelled</option><option value="expired">Expired</option></select></label>
+      <label>Trial ends<input id="trialEnds" type="datetime-local"></label>
+      <label>Current period ends<input id="periodEnd" type="datetime-local"></label>
+      <label>Admin note<textarea id="notes" maxlength="1000" rows="3"></textarea></label>
+      <div class="actions"><button type="button" id="cancelDialog" class="ghost">Cancel</button><button type="submit">Save subscription</button></div>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

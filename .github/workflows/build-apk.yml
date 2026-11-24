@@ -37,7 +37,10 @@ jobs:
         run: gradle --no-daemon :app:testDebugUnitTest
 
       - name: Build debug APK
-        run: gradle --no-daemon :app:assembleDebug
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: gradle --no-daemon -PSUPABASE_URL="$SUPABASE_URL" -PSUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" :app:assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
