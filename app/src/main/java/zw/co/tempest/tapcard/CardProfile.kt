@@ -1,6 +1,10 @@
 package zw.co.tempest.tapcard
 
+import java.util.UUID
+
 data class CardProfile(
+    val id: String = UUID.randomUUID().toString(),
+    val label: String = "Personal",
     val name: String = "",
     val title: String = "",
     val company: String = "",
@@ -8,7 +12,8 @@ data class CardProfile(
     val email: String = "",
     val website: String = "",
     val linkedIn: String = "",
-    val address: String = ""
+    val address: String = "",
+    val theme: String = "green"
 ) {
     fun primaryUri(): String = when {
         website.isNotBlank() -> normalizeUrl(website)

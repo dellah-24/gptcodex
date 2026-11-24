@@ -4,16 +4,17 @@ An offline-first Android digital business card with NFC, QR and vCard sharing.
 
 ## Download APK
 
-[Download TapCard ZW v1.2.0](downloads/TapCard-ZW-v1.2.0-debug.apk)
+[Download TapCard ZW v1.3.0](downloads/TapCard-ZW-v1.3.0-debug.apk)
 
-Open the saved card screen on the first phone. The NFC card activates
-automatically while that screen remains open; the second unlocked phone uses
-its normal NFC reader and requires no TapCard button or receiving mode. The APK
-is debug-signed for direct testing on Android 8.0 or newer.
+Open the selected card on the first phone. Its NFC card activates automatically
+while that screen remains open; the second unlocked phone uses its normal NFC
+reader and requires no TapCard button or receiving mode. The APK is debug-signed
+for direct testing on Android 8.0 or newer.
 
 ## Features
 
-- Create and edit a personal or company contact card
+- Create up to 10 independent personal, work or company cards
+- Switch the active NFC card, rename it, duplicate it, delete it and choose its colour
 - Generate an offline vCard 3.0 QR code
 - Make the card screen behave as an NFC Forum Type 4 digital card
 - Let another unlocked NFC phone open the primary profile link automatically
@@ -56,11 +57,16 @@ GitHub Actions builds and uploads `TapCard-ZW-debug-apk` on every push to the
 
 ## Using NFC
 
-1. Complete the profile and tap **Save card**.
-2. Keep the TapCard screen open; NFC sharing activates automatically.
-3. Unlock the second phone and make sure its NFC is enabled.
-4. Touch the phones’ NFC areas together until the second phone opens the profile link.
-5. Use the QR code if the devices cannot establish an NFC connection.
+1. Select a card from the card switcher, or tap **New** to create another one.
+2. Complete that profile and tap **Save card**.
+3. Keep the TapCard screen open; the selected card activates automatically.
+4. Unlock the second phone and make sure its NFC is enabled.
+5. Touch the phones’ NFC areas together until the second phone opens the profile link.
+6. Use the QR code if the devices cannot establish an NFC connection.
+
+Each card is saved as a separate local record, so changing one card never
+overwrites another. Use **Manage** to rename, duplicate or delete the selected
+card. At least one card is always retained.
 
 Designed by [Tempest Technologies](https://tempesttechnologies.co.zw).
 

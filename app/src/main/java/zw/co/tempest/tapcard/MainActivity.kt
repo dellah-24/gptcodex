@@ -1,9 +1,13 @@
 package zw.co.tempest.tapcard
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.nfc.NfcAdapter
 import android.os.Bundle
 import android.provider.Settings
+import android.text.InputType
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.core.content.FileProvider
@@ -45,6 +49,10 @@ class MainActivity : ComponentActivity() {
                     .show()
             } else toast("Card saved and NFC sharing activated")
         }
+        binding.cardSwitcherButton.setOnClickListener { showCardPicker() }
+        binding.newCardButton.setOnClickListener { createCard() }
+        binding.cardMenuButton.setOnClickListener { showCardMenu() }
+        binding.cardColorButton.setOnClickListener { cycleCardColour() }
         binding.shareButton.setOnClickListener { shareVCard() }
         binding.nfcStatus.setOnClickListener {
             if (nfcAdapter != null && nfcAdapter?.isEnabled != true) {
@@ -95,7 +103,113 @@ class MainActivity : ComponentActivity() {
         startActivity(Intent.createChooser(intent, "Share digital card"))
     }
 
-    private fun profileFromForm() = CardProfile(
+    private fun showCardPicker() {
+        saveCurrentSilently()
+        val cards = store.loadAll()
+        val labels = cards.map { card ->
+            listOf(card.label, card.name).filter { it.isNotBlank() }.joinToString(" — ")
+        }.toTypedArray()
+        val selected = cards.indexOfFirst { it.id == profile.id }.coerceAtLeast(0)
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Choose active NFC card")
+            .setSingleChoiceItems(labels, selected) { dialog, index ->
+                switchTo(store.setActive(cards[index].id))
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun createCard() {
+        promptForLabel("New card", "Work") { label ->
+            runCatching { store.create(label) }
+                .onSuccess { switchTo(it); toast("New card created") }
+                .onFailure { toast(it.message ?: "Could not create card") }
+        }
+    }
+
+    private fun showCardMenu() {
+        saveCurrentSilently()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(profile.label)
+            .setItems(arrayOf("Rename card", "Duplicate card", "Delete card")) { _, index ->
+                when (index) {
+                    0 -> renameCard()
+                    1 -> duplicateCard()
+                    2 -> deleteCard()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun renameCard() {
+        promptForLabel("Rename card", profile.label) { label ->
+            profile = profile.copy(label = label)
+            store.save(profile)
+            render(profile)
+        }
+    }
+
+    private fun duplicateCard() {
+        runCatching { store.duplicate(profileFromForm()) }
+            .onSuccess { switchTo(it); toast("Card duplicated") }
+            .onFailure { toast(it.message ?: "Could not duplicate card") }
+    }
+
+    private fun deleteCard() {
+        if (store.loadAll().size <= 1) {
+            toast("Create another card before deleting this one")
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Delete ${profile.label}?")
+            .setMessage("This removes only this locally stored card. Other cards are not changed.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Delete") { _, _ ->
+                runCatching { store.delete(profile.id) }
+                    .onSuccess { switchTo(it); toast("Card deleted") }
+                    .onFailure { toast(it.message ?: "Could not delete card") }
+            }
+            .show()
+    }
+
+    private fun cycleCardColour() {
+        val keys = THEMES.keys.toList()
+        val next = keys[(keys.indexOf(profile.theme).coerceAtLeast(0) + 1) % keys.size]
+        profile = profileFromForm().copy(theme = next)
+        store.save(profile)
+        render(profile)
+    }
+
+    private fun promptForLabel(title: String, initial: String, action: (String) -> Unit) {
+        val input = EditText(this).apply {
+            setText(initial)
+            selectAll()
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
+            setPadding(dp(24), dp(8), dp(24), dp(8))
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(title)
+            .setView(input)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save") { _, _ -> action(input.text.toString().trim().ifBlank { "Card" }) }
+            .show()
+    }
+
+    private fun switchTo(card: CardProfile) {
+        profile = card
+        populateForm(card)
+        render(card)
+        activateCard()
+    }
+
+    private fun saveCurrentSilently() {
+        profile = profileFromForm()
+        store.save(profile)
+    }
+
+    private fun profileFromForm() = profile.copy(
         name = binding.nameInput.text?.toString()?.trim().orEmpty(),
         title = binding.titleInput.text?.toString()?.trim().orEmpty(),
         company = binding.companyInput.text?.toString()?.trim().orEmpty(),
@@ -118,6 +232,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun render(value: CardProfile) = with(binding) {
+        cardSwitcherButton.text = "${value.label} ▾"
+        cardColorButton.text = "Card colour: ${THEMES[value.theme]?.name ?: "Green"}"
+        val theme = THEMES[value.theme] ?: THEMES.getValue("green")
+        cardPreview.background = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(Color.parseColor(theme.start), Color.parseColor(theme.end))
+        ).apply { cornerRadius = dp(28).toFloat() }
+        cardPreview.setPadding(dp(24), dp(24), dp(24), dp(24))
         previewName.text = value.name.ifBlank { "Your Name" }
         previewRole.text = listOf(value.title, value.company).filter { it.isNotBlank() }.joinToString(" • ").ifBlank { "Role • Company" }
         previewContact.text = listOf(value.phone, value.email).filter { it.isNotBlank() }.joinToString(" • ").ifBlank { "phone • email" }
@@ -126,4 +248,17 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private data class CardTheme(val name: String, val start: String, val end: String)
+
+    companion object {
+        private val THEMES = linkedMapOf(
+            "green" to CardTheme("Green", "#08755C", "#064D3F"),
+            "blue" to CardTheme("Blue", "#1769AA", "#0D3D73"),
+            "purple" to CardTheme("Purple", "#7048A8", "#3E2868"),
+            "charcoal" to CardTheme("Charcoal", "#38464A", "#182326")
+        )
+    }
 }
